@@ -1,0 +1,559 @@
+Understanding Global Hunger – v2 (revised analysis)
+================
+Nodir Uktamov
+
+- [Step 0 – Libraries](#step-0--libraries)
+- [Step 0 – Load the data](#step-0--load-the-data)
+- [Step 1 – Remove World Bank
+  aggregates](#step-1--remove-world-bank-aggregates)
+- [Step 2 – How many countries have complete
+  data?](#step-2--how-many-countries-have-complete-data)
+- [Decision: Option B (2015–2019
+  average)](#decision-option-b-20152019-average)
+- [Step 3 – Final dataset and log
+  GDP](#step-3--final-dataset-and-log-gdp)
+- [Step 4 – Plots](#step-4--plots)
+  - [Hunger vs income inequality
+    (GINI)](#hunger-vs-income-inequality-gini)
+  - [Hunger vs primary school
+    enrolment](#hunger-vs-primary-school-enrolment)
+  - [Hunger vs GDP per capita (log
+    scale)](#hunger-vs-gdp-per-capita-log-scale)
+- [Step 5 – Correlations: Pearson and
+  Spearman](#step-5--correlations-pearson-and-spearman)
+- [Step 6 – v1 vs v2](#step-6--v1-vs-v2)
+- [Findings](#findings)
+
+This is a revised version of `global_hunger_analysis.Rmd` (v1), which
+stays unchanged.
+
+v1 had two problems that affect its results:
+
+1.  **Aggregate rows counted as countries.** The World Bank files also
+    contain rows for regions, income groups and “World”. v1 treated them
+    as if they were countries.
+2.  **Years pooled together.** The scatter plots and correlation tests
+    used every year from 2001 to 2020, although their titles say 2018.
+    The same country therefore appeared up to 20 times.
+
+v2 fixes these one step at a time. Steps 1 and 2 are below. The later
+steps (plots, correlations, v1 vs v2 table) come after choosing between
+the two options in Step 2.
+
+## Step 0 – Libraries
+
+All packages are loaded once here, and nowhere else:
+
+- `dplyr` for all data manipulation.
+- `ggplot2` for all plots.
+
+The CSV files are read with base R’s `read.csv()`, so no other package
+is needed.
+
+``` r
+library(dplyr)
+library(ggplot2)
+```
+
+    ## Warning: package 'ggplot2' was built under R version 4.4.3
+
+## Step 0 – Load the data
+
+These are the same four World Bank files as v1, plus one new file: the
+**country metadata file**. It comes from the same World Bank download
+(inside each zip) and lists every code with its region and income group.
+
+Details of `read_wb()`:
+
+- `skip = 4` skips the four title lines at the top of each data file.
+  The metadata file has no title lines, so it uses `skip = 0`.
+- `check.names = FALSE` keeps column names such as `2018` and
+  `Country Code` exactly as they are.
+- `fileEncoding = "UTF-8-BOM"` handles the invisible marker at the start
+  of the files and accented names such as *Côte d’Ivoire*.
+- Every line in these files ends with a comma, which creates an extra
+  column with no name. dplyr refuses to work with a column that has no
+  name, so `read_wb()` drops it straight after reading. This is the only
+  line that uses base R instead of dplyr.
+
+``` r
+read_wb <- function(path, skip = 4) {
+  d <- read.csv(path, skip = skip, check.names = FALSE, fileEncoding = "UTF-8-BOM")
+  d[names(d) != ""]   # drop the empty column created by the trailing comma
+}
+
+hunger <- read_wb("data/API_SN.ITK.DEFC.ZS_DS2_en_csv_v2_2561.csv")
+gini   <- read_wb("data/API_SI.POV.GINI_DS2_en_csv_v2_2566.csv")
+school <- read_wb("data/API_SE.PRM.ENRR_DS2_en_csv_v2_5690.csv")
+gdp    <- read_wb("data/API_NY.GDP.PCAP.CD_DS2_en_csv_v2_2702.csv")
+country_meta <- read_wb("data/Metadata_Country_API_NY.GDP.PCAP.CD_DS2_en_csv_v2_2702.csv", skip = 0)
+
+c(rows_per_data_file = nrow(hunger), rows_in_metadata = nrow(country_meta))
+```
+
+    ## rows_per_data_file   rows_in_metadata 
+    ##                266                265
+
+## Step 1 – Remove World Bank aggregates
+
+Each data file has **266 rows**:
+
+- **217 economies** (countries and territories)
+- **48 aggregates**: “World”, regions such as “Sub-Saharan Africa”,
+  income groups such as “High income”, and lending groups such as “IDA
+  only”
+- **1 row called “Not classified”** (code `INX`)
+
+v1 kept all 266.
+
+In the metadata file, every economy has a `Region` and every aggregate
+has an **empty** `Region`, so I keep only codes with a Region. `INX` is
+not in the metadata at all, so it is dropped too.
+
+The chunk prints the 48 aggregates, so you can check that no real
+country is removed.
+
+``` r
+countries <- country_meta %>%
+  filter(Region != "") %>%
+  select(code = `Country Code`, Region, IncomeGroup)
+
+aggregates <- country_meta %>%
+  filter(Region == "") %>%
+  pull(TableName)
+
+c(economies_kept = nrow(countries), aggregates_removed = length(aggregates))
+```
+
+    ##     economies_kept aggregates_removed 
+    ##                217                 48
+
+``` r
+sort(aggregates)
+```
+
+    ##  [1] "Africa Eastern and Southern"                       
+    ##  [2] "Africa Western and Central"                        
+    ##  [3] "Arab World"                                        
+    ##  [4] "Caribbean small states"                            
+    ##  [5] "Central Europe and the Baltics"                    
+    ##  [6] "Early-demographic dividend"                        
+    ##  [7] "East Asia & Pacific"                               
+    ##  [8] "East Asia & Pacific (excluding high income)"       
+    ##  [9] "East Asia & Pacific (IDA & IBRD)"                  
+    ## [10] "Euro area"                                         
+    ## [11] "Europe & Central Asia"                             
+    ## [12] "Europe & Central Asia (excluding high income)"     
+    ## [13] "Europe & Central Asia (IDA & IBRD)"                
+    ## [14] "European Union"                                    
+    ## [15] "Fragile and conflict affected situations"          
+    ## [16] "Heavily indebted poor countries (HIPC)"            
+    ## [17] "High income"                                       
+    ## [18] "IBRD only"                                         
+    ## [19] "IDA & IBRD total"                                  
+    ## [20] "IDA blend"                                         
+    ## [21] "IDA only"                                          
+    ## [22] "IDA total"                                         
+    ## [23] "Late-demographic dividend"                         
+    ## [24] "Latin America & Caribbean"                         
+    ## [25] "Latin America & Caribbean (excluding high income)" 
+    ## [26] "Latin America & Caribbean (IDA & IBRD)"            
+    ## [27] "Least developed countries: UN classification"      
+    ## [28] "Low & middle income"                               
+    ## [29] "Low income"                                        
+    ## [30] "Lower middle income"                               
+    ## [31] "Middle East & North Africa"                        
+    ## [32] "Middle East & North Africa (excluding high income)"
+    ## [33] "Middle East & North Africa (IDA & IBRD)"           
+    ## [34] "Middle income"                                     
+    ## [35] "North America"                                     
+    ## [36] "OECD members"                                      
+    ## [37] "Other small states"                                
+    ## [38] "Pacific island small states"                       
+    ## [39] "Post-demographic dividend"                         
+    ## [40] "Pre-demographic dividend"                          
+    ## [41] "Small states"                                      
+    ## [42] "South Asia"                                        
+    ## [43] "South Asia (IDA & IBRD)"                           
+    ## [44] "Sub-Saharan Africa"                                
+    ## [45] "Sub-Saharan Africa (excluding high income)"        
+    ## [46] "Sub-Saharan Africa (IDA & IBRD)"                   
+    ## [47] "Upper middle income"                               
+    ## [48] "World"
+
+## Step 2 – How many countries have complete data?
+
+From here on each country should be **one point**. There are two ways to
+choose that point:
+
+- **Option A: 2018 only.** Each country’s 2018 value of each indicator.
+  This matches the “2018” in v1’s titles, but countries without a 2018
+  GINI value drop out.
+- **Option B: 2015–2019 average.** For each country and indicator, the
+  average of whichever years between 2015 and 2019 have data. More
+  countries are included. The trade-off is that a country’s values can
+  come from different years: for example, a GINI value from 2016 next to
+  hunger averaged over 2015–2019.
+
+A country counts as **complete** when it has all four indicators:
+hunger, GINI, school enrolment and GDP. The code below builds both
+versions, counts complete countries and shows their income groups. It
+also shows how many years of GINI data the Option B countries have.
+
+`value_2018()` and `value_avg()` each return two columns, `code` and
+`value`, for one indicator. `combine()` then joins the four indicators
+into one table per option.
+
+``` r
+years_b <- as.character(2015:2019)
+
+# Option A: the 2018 value of one indicator, countries only
+value_2018 <- function(d) {
+  d %>%
+    filter(`Country Code` %in% countries$code) %>%
+    select(code = `Country Code`, value = `2018`)
+}
+
+# Option B: the 2015-2019 average of one indicator, ignoring missing years
+value_avg <- function(d) {
+  d %>%
+    filter(`Country Code` %in% countries$code) %>%
+    mutate(value = rowMeans(across(all_of(years_b)), na.rm = TRUE),
+           value = if_else(is.nan(value), NA_real_, value)) %>%   # no data in any year gives NaN
+    select(code = `Country Code`, value)
+}
+
+combine <- function(get_value) {
+  get_value(hunger) %>% rename(Hunger = value) %>%
+    inner_join(get_value(gini)   %>% rename(GINI = value),         by = "code") %>%
+    inner_join(get_value(school) %>% rename(SchoolEnroll = value), by = "code") %>%
+    inner_join(get_value(gdp)    %>% rename(GDP = value),          by = "code")
+}
+
+data_a <- combine(value_2018)
+data_b <- combine(value_avg)
+
+complete_a <- data_a %>% filter(!is.na(Hunger), !is.na(GINI), !is.na(SchoolEnroll), !is.na(GDP))
+complete_b <- data_b %>% filter(!is.na(Hunger), !is.na(GINI), !is.na(SchoolEnroll), !is.na(GDP))
+
+# Countries with data for each indicator, and with all four
+count_available <- function(d, complete, label) {
+  d %>% summarise(option       = label,
+                  Hunger       = sum(!is.na(Hunger)),
+                  GINI         = sum(!is.na(GINI)),
+                  SchoolEnroll = sum(!is.na(SchoolEnroll)),
+                  GDP          = sum(!is.na(GDP)),
+                  complete     = nrow(complete))
+}
+bind_rows(count_available(data_a, complete_a, "A: 2018 only"),
+          count_available(data_b, complete_b, "B: 2015-2019 average"))
+```
+
+    ##                 option Hunger GINI SchoolEnroll GDP complete
+    ## 1         A: 2018 only    171   94          169 210       88
+    ## 2 B: 2015-2019 average    171  134          192 212      121
+
+``` r
+# Income groups of the complete countries, compared with all 217 economies
+bind_rows(complete_a %>% mutate(option = "A: 2018 only"),
+          complete_b %>% mutate(option = "B: 2015-2019 average"),
+          countries  %>% mutate(option = "All economies")) %>%
+  left_join(countries %>% select(code, income = IncomeGroup), by = "code") %>%
+  count(option, income)
+```
+
+    ##                  option              income  n
+    ## 1          A: 2018 only         High income 41
+    ## 2          A: 2018 only          Low income  6
+    ## 3          A: 2018 only Lower middle income 14
+    ## 4          A: 2018 only Upper middle income 27
+    ## 5         All economies                      1
+    ## 6         All economies         High income 85
+    ## 7         All economies          Low income 26
+    ## 8         All economies Lower middle income 51
+    ## 9         All economies Upper middle income 54
+    ## 10 B: 2015-2019 average         High income 44
+    ## 11 B: 2015-2019 average          Low income 13
+    ## 12 B: 2015-2019 average Lower middle income 30
+    ## 13 B: 2015-2019 average Upper middle income 34
+
+``` r
+# Option B only: how many of the 5 years have a GINI value?
+gini %>%
+  filter(`Country Code` %in% complete_b$code) %>%
+  mutate(gini_years = rowSums(!is.na(across(all_of(years_b))))) %>%
+  count(gini_years)
+```
+
+    ##   gini_years  n
+    ## 1          1 37
+    ## 2          2 17
+    ## 3          3  1
+    ## 4          4  3
+    ## 5          5 63
+
+## Decision: Option B (2015–2019 average)
+
+**Why:**
+
+- Option B keeps **121 countries**, including 13 low-income countries.
+  Option A keeps 88, with only 6 low-income countries.
+- Hunger is concentrated in the poorest countries, so leaving them out
+  would bias the results towards wealthy, data-rich countries.
+
+**The trade-off:** a country’s four values can come from different years
+within 2015–2019. For 37 of the 121 countries, GINI comes from a single
+year. Inequality changes slowly, so this matters less than losing
+countries.
+
+## Step 3 – Final dataset and log GDP
+
+The analysis dataset is the 121 complete countries from Option B. Each
+country is one row, with the 2015–2019 average of each indicator.
+
+**Why log GDP:**
+
+- GDP per capita is very right-skewed: it runs from a few hundred US
+  dollars to over US\$100,000.
+- A \$1,000 increase means far more in a poor country than in a rich
+  one.
+- On a log scale, the relationship with hunger is much closer to a
+  straight line, which is what Pearson’s correlation measures.
+
+So v2 adds `log_gdp = log10(GDP)`. On this scale, 1 unit means “10 times
+richer”. v1 used raw GDP in its correlation.
+
+**A note on the data:** the World Bank reports undernourishment below
+2.5% as 2.5. Many wealthier countries therefore sit exactly at 2.5%.
+
+``` r
+hunger_data <- complete_b %>%
+  left_join(countries, by = "code") %>%
+  left_join(hunger %>% select(code = `Country Code`, country = `Country Name`), by = "code") %>%
+  mutate(log_gdp = log10(GDP))
+
+n_countries <- nrow(hunger_data)
+subtitle_b  <- paste0(n_countries, " countries, average of 2015–2019 values. World Bank aggregates excluded.")
+note_floor  <- "Hunger below 2.5% is reported by the World Bank as 2.5%."
+
+c(countries = n_countries, at_hunger_floor = sum(hunger_data$Hunger == 2.5))
+```
+
+    ##       countries at_hunger_floor 
+    ##             121              45
+
+``` r
+summary(hunger_data %>% select(Hunger, GINI, SchoolEnroll, GDP, log_gdp))
+```
+
+    ##      Hunger            GINI        SchoolEnroll         GDP          
+    ##  Min.   : 2.500   Min.   :24.62   Min.   : 73.56   Min.   :   511.9  
+    ##  1st Qu.: 2.500   1st Qu.:31.96   1st Qu.: 97.34   1st Qu.:  2171.1  
+    ##  Median : 4.020   Median :35.50   Median :100.57   Median :  6395.5  
+    ##  Mean   : 8.142   Mean   :36.85   Mean   :101.55   Mean   : 15557.5  
+    ##  3rd Qu.:11.160   3rd Qu.:41.58   3rd Qu.:105.02   3rd Qu.: 18748.2  
+    ##  Max.   :38.800   Max.   :59.10   Max.   :138.46   Max.   :110413.5  
+    ##     log_gdp     
+    ##  Min.   :2.709  
+    ##  1st Qu.:3.337  
+    ##  Median :3.806  
+    ##  Mean   :3.816  
+    ##  3rd Qu.:4.273  
+    ##  Max.   :5.043
+
+## Step 4 – Plots
+
+There is one plot per factor, with each point a country.
+
+Every title now **describes** what is plotted instead of stating a
+conclusion. Every subtitle states the data actually used: the number of
+countries, the years and that aggregates are excluded. The red line is a
+straight-line (linear) fit, as in v1.
+
+### Hunger vs income inequality (GINI)
+
+``` r
+ggplot(hunger_data, aes(x = GINI, y = Hunger)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, colour = "red", formula = y ~ x) +
+  labs(title = "Hunger vs income inequality (GINI index)",
+       subtitle = subtitle_b,
+       caption = note_floor,
+       x = "GINI index (higher = more unequal)",
+       y = "Prevalence of undernourishment (% of population)") +
+  theme_minimal()
+```
+
+![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-gini-1.png)<!-- -->
+
+### Hunger vs primary school enrolment
+
+``` r
+ggplot(hunger_data, aes(x = SchoolEnroll, y = Hunger)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, colour = "red", formula = y ~ x) +
+  labs(title = "Hunger vs primary school enrolment",
+       subtitle = subtitle_b,
+       caption = note_floor,
+       x = "Primary school enrolment (% gross)",
+       y = "Prevalence of undernourishment (% of population)") +
+  theme_minimal()
+```
+
+![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-school-1.png)<!-- -->
+
+### Hunger vs GDP per capita (log scale)
+
+The x-axis uses a log scale (`scale_x_log10`), so the straight line is
+fitted to log GDP. That is the same variable the correlation in Step 5
+uses.
+
+``` r
+ggplot(hunger_data, aes(x = GDP, y = Hunger)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", se = FALSE, colour = "red", formula = y ~ x) +
+  scale_x_log10(labels = function(x) paste0("$", formatC(x, format = "d", big.mark = ","))) +
+  labs(title = "Hunger vs GDP per capita (log scale)",
+       subtitle = subtitle_b,
+       caption = note_floor,
+       x = "GDP per capita (current US$, log scale)",
+       y = "Prevalence of undernourishment (% of population)") +
+  theme_minimal()
+```
+
+![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-gdp-1.png)<!-- -->
+
+## Step 5 – Correlations: Pearson and Spearman
+
+For each factor, I compute two correlations with hunger:
+
+- **Pearson’s r** measures how close the relationship is to a straight
+  line. It is sensitive to outliers and skew. GDP uses `log_gdp`.
+- **Spearman’s ρ (rho)** uses ranks instead of values. It only asks
+  whether hunger tends to go down (or up) as the factor goes up,
+  whatever the shape of the relationship. It is less affected by
+  outliers and by the 2.5% floor.
+  - Ranks are the same for GDP and log GDP, so Spearman gives the same
+    answer either way.
+
+If both agree, the result does not depend on the choice of method.
+
+All tests use the same 121 countries. `exact = FALSE` tells R to use the
+standard approximation for Spearman’s p-value, because tied values (such
+as the many 2.5% hunger values) make an exact p-value impossible.
+
+`correlate()` runs both tests for one factor and returns one row.
+`bind_rows()` stacks the three rows into a table.
+
+``` r
+correlate <- function(x, label) {
+  pearson  <- cor.test(x, hunger_data$Hunger, method = "pearson")
+  spearman <- cor.test(x, hunger_data$Hunger, method = "spearman", exact = FALSE)
+  tibble(factor     = label,
+         pearson_r  = round(unname(pearson$estimate), 3),
+         pearson_p  = signif(pearson$p.value, 2),
+         spearman_rho = round(unname(spearman$estimate), 3),
+         spearman_p = signif(spearman$p.value, 2),
+         n          = sum(!is.na(x) & !is.na(hunger_data$Hunger)))
+}
+
+v2_correlations <- bind_rows(
+  correlate(hunger_data$GINI,         "GINI index"),
+  correlate(hunger_data$SchoolEnroll, "Primary school enrolment"),
+  correlate(hunger_data$log_gdp,      "GDP per capita (log10)")
+)
+as.data.frame(v2_correlations)   # data.frame prints p-values more readably than a tibble
+```
+
+    ##                     factor pearson_r pearson_p spearman_rho spearman_p   n
+    ## 1               GINI index     0.474   4.0e-08        0.507    3.0e-09 121
+    ## 2 Primary school enrolment     0.128   1.6e-01       -0.026    7.8e-01 121
+    ## 3   GDP per capita (log10)    -0.669   4.8e-17       -0.828    1.0e-31 121
+
+## Step 6 – v1 vs v2
+
+The v1 numbers are copied from the `cor.test()` output in v1
+(`global_hunger_analysis.Rmd`, rendered in `report/`). v1 calculated
+them differently:
+
+- All years from 2001 to 2020 pooled together, so `n` counts
+  country-years, not countries.
+- World Bank aggregates included.
+- Pearson only, with raw GDP.
+
+R printed two of the v1 p-values only as “\< 2.2e-16”, so they are
+recorded as `2.2e-16` here. They are upper bounds, not exact values.
+
+``` r
+v1_correlations <- tibble(
+  factor = c("GINI index", "Primary school enrolment", "GDP per capita (log10)"),
+  v1_r   = c(0.405, -0.071, -0.431),          # v1 used raw GDP, not log GDP
+  v1_p   = c(2.2e-16, 1.165e-05, 2.2e-16),    # "< 2.2e-16" in v1's output for GINI and GDP
+  v1_n   = c(1513, 3837, 4342)                # country-years, aggregates included
+)
+
+v1_correlations %>%
+  left_join(v2_correlations %>%
+              select(factor, v2_pearson_r = pearson_r, v2_pearson_p = pearson_p,
+                     v2_spearman_rho = spearman_rho, v2_spearman_p = spearman_p, v2_n = n),
+            by = "factor") %>%
+  as.data.frame()
+```
+
+    ##                     factor   v1_r      v1_p v1_n v2_pearson_r v2_pearson_p
+    ## 1               GINI index  0.405 2.200e-16 1513        0.474      4.0e-08
+    ## 2 Primary school enrolment -0.071 1.165e-05 3837        0.128      1.6e-01
+    ## 3   GDP per capita (log10) -0.431 2.200e-16 4342       -0.669      4.8e-17
+    ##   v2_spearman_rho v2_spearman_p v2_n
+    ## 1           0.507       3.0e-09  121
+    ## 2          -0.026       7.8e-01  121
+    ## 3          -0.828       1.0e-31  121
+
+## Findings
+
+All results below use 121 countries (World Bank aggregates removed),
+with each variable averaged over 2015–2019, so each country counts once.
+
+**GDP per capita has the strongest relationship with hunger.** Pearson’s
+r with log10 GDP is −0.67 (p ≈ 5e-17) and Spearman’s ρ is −0.83: richer
+countries have much less undernourishment. This is clearly stronger than
+in v1 (r = −0.43), where raw GDP, pooled years and aggregate rows
+weakened it. Spearman is stronger than Pearson because the relationship
+is monotonic but not linear. The World Bank reports all hunger rates
+below 2.5% as exactly 2.5%, so many richer countries sit on that floor
+and the trend flattens at the high-income end. Spearman only measures
+whether hunger falls as GDP rises, so it is not affected by that bend.
+
+**Inequality (GINI) is moderately associated with higher hunger.**
+Pearson’s r = 0.47 (p ≈ 4e-8) and Spearman’s ρ = 0.51, slightly stronger
+than v1’s 0.41. Countries with more unequal incomes tend to have higher
+rates of undernourishment.
+
+**Primary school enrolment shows no relationship.** Pearson’s r = 0.13
+(p = 0.16) and Spearman’s ρ = −0.03; the two even disagree on direction.
+In v1 the correlation was similarly close to zero (r = −0.07), but it
+was reported as significant (p ≈ 1e-5). That was an artefact: v1 counted
+3,837 country-years, including aggregates, so each country appeared
+about 20 times. Treating repeated observations of the same country as
+independent (pseudo-replication) inflates n and makes even tiny
+correlations look significant. One possible reason for the lack of
+relationship is that primary enrolment is high in most countries,
+leaving little variation, but this analysis does not test that.
+
+**Limitations.**
+
+- These are correlations, not causes. GDP, inequality and schooling are
+  related to each other, so each correlation may partly reflect the
+  others.
+- Values are averaged over 2015–2019 and can come from different years
+  for different countries; 37 countries have only one GINI value in that
+  period.
+- The 2.5% reporting floor hides differences among low-hunger countries.
+
+**Next steps.**
+
+1.  Fit a multiple regression with all three factors together, to see
+    which ones still matter once the others are accounted for.
+2.  Check how strongly GDP and GINI are correlated with each other.
+3.  Treat the 2.5% floor properly (e.g. as a censored value) instead of
+    as an exact number.

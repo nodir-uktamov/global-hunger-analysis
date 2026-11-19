@@ -21,3 +21,6 @@
 Thumbs.db
 .idea/
 .vscode/
+
+# HTML from knitting in RStudio (the GitHub versions live in report/)
+*.html
