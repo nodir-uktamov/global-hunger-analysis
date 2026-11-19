@@ -22,6 +22,8 @@ Nodir Uktamov
 - [Step 5 – Correlations: Pearson and
   Spearman](#step-5--correlations-pearson-and-spearman)
 - [Step 6 – v1 vs v2](#step-6--v1-vs-v2)
+- [Step 7 – Extra checks used in the
+  Findings](#step-7--extra-checks-used-in-the-findings)
 - [Findings](#findings)
 
 This is a revised version of `global_hunger_analysis.Rmd` (v1), which
@@ -509,6 +511,36 @@ v1_correlations %>%
     ## 2          -0.026       7.8e-01  121
     ## 3          -0.828       1.0e-31  121
 
+## Step 7 – Extra checks used in the Findings
+
+Two quick checks back up statements in the Findings:
+
+- **Raw GDP.** Pearson’s r using **raw** GDP instead of log GDP, on the
+  same 121 countries. This shows how much of the change from v1 comes
+  from switching to log GDP.
+- **Links between the factors.** How strongly the three factors are
+  correlated **with each other**. If two factors move together, each
+  one’s correlation with hunger may partly reflect the other.
+
+``` r
+c(pearson_r_raw_gdp = round(cor(hunger_data$GDP, hunger_data$Hunger), 3))
+```
+
+    ## pearson_r_raw_gdp 
+    ##            -0.422
+
+``` r
+hunger_data %>%
+  select(GINI, SchoolEnroll, log_gdp) %>%
+  cor() %>%
+  round(2)
+```
+
+    ##               GINI SchoolEnroll log_gdp
+    ## GINI          1.00         0.26   -0.33
+    ## SchoolEnroll  0.26         1.00    0.01
+    ## log_gdp      -0.33         0.01    1.00
+
 ## Findings
 
 All results below use 121 countries (World Bank aggregates removed),
@@ -517,34 +549,37 @@ with each variable averaged over 2015–2019, so each country counts once.
 **GDP per capita has the strongest relationship with hunger.** Pearson’s
 r with log10 GDP is −0.67 (p ≈ 5e-17) and Spearman’s ρ is −0.83: richer
 countries have much less undernourishment. This is clearly stronger than
-in v1 (r = −0.43), where raw GDP, pooled years and aggregate rows
-weakened it. Spearman is stronger than Pearson because the relationship
-is monotonic but not linear. The World Bank reports all hunger rates
-below 2.5% as exactly 2.5%, so many richer countries sit on that floor
-and the trend flattens at the high-income end. Spearman only measures
-whether hunger falls as GDP rises, so it is not affected by that bend.
+in v1 (r = −0.43). Most of the difference comes from using log GDP: with
+raw GDP, the same 121 countries give r = −0.42 (Step 7). Spearman is
+stronger than Pearson because the relationship is monotonic but not
+linear. The World Bank reports all hunger rates below 2.5% as exactly
+2.5%, so many richer countries sit on that floor and the trend flattens
+at the high-income end. Spearman only measures whether hunger falls as
+GDP rises, so it is not affected by that bend.
 
 **Inequality (GINI) is moderately associated with higher hunger.**
 Pearson’s r = 0.47 (p ≈ 4e-8) and Spearman’s ρ = 0.51, slightly stronger
-than v1’s 0.41. Countries with more unequal incomes tend to have higher
+than v1’s 0.40. Countries with more unequal incomes tend to have higher
 rates of undernourishment.
 
 **Primary school enrolment shows no relationship.** Pearson’s r = 0.13
 (p = 0.16) and Spearman’s ρ = −0.03; the two even disagree on direction.
 In v1 the correlation was similarly close to zero (r = −0.07), but it
 was reported as significant (p ≈ 1e-5). That was an artefact: v1 counted
-3,837 country-years, including aggregates, so each country appeared
-about 20 times. Treating repeated observations of the same country as
-independent (pseudo-replication) inflates n and makes even tiny
-correlations look significant. One possible reason for the lack of
-relationship is that primary enrolment is high in most countries,
-leaving little variation, but this analysis does not test that.
+3,837 country-years, including aggregates, so the same country could
+appear up to 20 times, once for each year from 2001 to 2020. Treating
+repeated observations of the same country as independent
+(pseudo-replication) inflates n and makes even tiny correlations look
+significant. One possible reason for the lack of relationship is that
+primary enrolment is high in most countries, leaving little variation,
+but this analysis does not test that.
 
 **Limitations.**
 
-- These are correlations, not causes. GDP, inequality and schooling are
-  related to each other, so each correlation may partly reflect the
-  others.
+- These are correlations, not causes. GDP and inequality are moderately
+  correlated with each other (r = −0.33, Step 7), so each correlation
+  may partly reflect the other. School enrolment is almost unrelated to
+  GDP (r = 0.01) and only weakly related to inequality (r = 0.26).
 - Values are averaged over 2015–2019 and can come from different years
   for different countries; 37 countries have only one GINI value in that
   period.
@@ -554,6 +589,5 @@ leaving little variation, but this analysis does not test that.
 
 1.  Fit a multiple regression with all three factors together, to see
     which ones still matter once the others are accounted for.
-2.  Check how strongly GDP and GINI are correlated with each other.
-3.  Treat the 2.5% floor properly (e.g. as a censored value) instead of
+2.  Treat the 2.5% floor properly (e.g. as a censored value) instead of
     as an exact number.

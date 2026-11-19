@@ -145,7 +145,7 @@ The Rmd reads the CSV files from `data/` using relative paths, so run it from th
 
   See [v2 results](#v2-results-one-point-per-country).
 - **Account for the 2.5% reporting floor.** The World Bank reports undernourishment below 2.5% as 2.5, and 45 of v2's 121 countries sit exactly at that floor. I'd treat those values as censored ("2.5% or less") instead of exact.
-- **Go beyond pairwise correlation.** Fit a multiple regression with log GDP, GINI and enrolment together, to see which factor still matters once the others are accounted for. As a first step, check how strongly GDP and GINI are correlated with each other.
+- **Go beyond pairwise correlation.** Fit a multiple regression with log GDP, GINI and enrolment together, to see which factor still matters once the others are accounted for. GDP and GINI are moderately correlated with each other (r = −0.33 in v2), so their separate correlations with hunger overlap.
 - **Handle missing GINI data.** GINI is missing for many low-income countries, so I'd test how sensitive the results are to that, for example by comparing countries with and without GINI data.
 - **Build the interactive version.** The report proposes a scrolling, interactive map. I'd build it with Shiny or Plotly.
 
