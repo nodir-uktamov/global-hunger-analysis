@@ -528,7 +528,7 @@ cor.test(~ GDP + Hunger, data = combined)
     ## -0.4309749
 
 Summary: \* GINI vs Hunger: r = 0.40 → moderate positive, statistically
-significant \* School vs Hunger: r = 0.07 → very weak, statistically
+significant \* School vs Hunger: r = -0.07 → very weak, statistically
 significant \* GDP vs Hunger: r = -0.43 → moderate negative,
 statistically significant
 
@@ -581,9 +581,9 @@ world, seeing how hunger prevalence changes by country. As the reader
 scrolls, the site would guide them through: Key statistics and
 choropleth maps - The causes of hunger: inequality, lack of education,
 conflict, and climate change - Personal stories or country spotlights
-(e.g. Ethiopia saw a 10% spike after 2018 while the US showed no
-fluctuation) - Actionable ways individuals and institutions can
-contribute This approach aligns with the global need for accessible,
+(e.g. Ethiopia saw a 5 percentage point rise after 2018 while the US
+showed no fluctuation) - Actionable ways individuals and institutions
+can contribute This approach aligns with the global need for accessible,
 emotionally compelling communication that mobilises public empathy and
 support.
 
@@ -603,8 +603,8 @@ Global South, particularly in sub-Saharan Africa and parts of South
 Asia, where prevalence rates exceed 25% in some countries. Time trend
 analysis showed that while high-income countries like the United States
 experienced little change in hunger rates, countries like Ethiopia saw a
-10 percentage point increase after 2018, possibly linked to conflict,
-inflation, or climate shocks.
+5 percentage point increase after 2018 (from 17.9% to 23.0% by 2020),
+possibly linked to conflict, inflation, or climate shocks.
 
 This analysis also underscored the need for better data: many of the
 world’s poorest countries—the ones facing the highest hunger burdens—are
