@@ -92,6 +92,10 @@ R · tidyverse (readr, dplyr, tidyr, ggplot2) · sf · rnaturalearth · naniar �
 
 The Rmd reads the CSV files from `data/` using relative paths, so run it from the repository root. `session_info.txt` lists the package versions used for the last render.
 
+## TODO
+
+- [ ] Revised analysis planned: remove World Bank aggregate rows, match years to plot labels.
+
 ## What I'd improve next
 
 - **Use one year consistently.** The scatter plots and correlation tests use every year from 2001 to 2020 pooled together, although their subtitles say 2018. I'd filter to 2018 (or average each country over a period) so every point is one country.
