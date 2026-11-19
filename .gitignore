@@ -1,0 +1,23 @@
+# R session files
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+
+# knitr / rmarkdown intermediates
+*_cache/
+*.knit.md
+*.utf8.md
+*.log
+*.aux
+*.tex
+
+# Secrets and local config
+.env
+.Renviron
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
