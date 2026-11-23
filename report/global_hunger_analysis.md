@@ -230,7 +230,7 @@ combined %>%
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 This figure shows the number of countries reporting data for each
 indicator over time. GDP and hunger data are consistently available for
 nearly all countries throughout the 2000–2020 period. School enrollment
@@ -285,7 +285,7 @@ combined %>%
   labs(title = "Distribution of Key Variables (2018)")
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 Figure: Distribution of Key Variables (2018) This figure shows the
 distribution of four main indicators used in this analysis for the year
 2018.
@@ -323,7 +323,7 @@ ggplot(combined %>% drop_na(GINI, Hunger), aes(x = GINI, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 Interpretation: This scatterplot shows a moderate positive correlation
 between income inequality and hunger prevalence. Countries with higher
 GINI scores (more unequal) tend to report higher levels of
@@ -345,7 +345,7 @@ ggplot(combined %>% drop_na(SchoolEnroll, Hunger), aes(x = SchoolEnroll, y = Hun
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 Unlike the GINI relationship, school enrollment has a very weak negative
 correlation with hunger. Although statistically significant, the effect
 size is small. This suggests that access to education, while important,
@@ -368,7 +368,7 @@ ggplot(combined %>% drop_na(GDP, Hunger), aes(x = GDP, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 There is a strong negative association between GDP per capita and
 hunger. The log scale helps spread out lower-income countries, showing
 that as GDP increases, hunger prevalence tends to decrease sharply. This
@@ -394,7 +394,7 @@ ggplot(combined %>% drop_na(Hunger), aes(x = Year, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 This line chart shows the overall trend in hunger over time. A decline
 would indicate global progress, while stagnation or an increase might
 point to persistent structural challenges.
@@ -414,7 +414,7 @@ ggplot(combined %>%
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 To better understand how hunger evolves over time within different
 economic contexts, I analysed trends in four countries: the United
 States, Brazil, India, and Ethiopia. These countries represent a
@@ -453,7 +453,7 @@ ggplot(world_hunger_map) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](global_hunger_analysis_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 Geographic disparities in hunger are made starkly visible when examining
 country-level undernourishment data for 2018. The global pattern reveals
 a heavy concentration of food insecurity in sub-Saharan Africa, where

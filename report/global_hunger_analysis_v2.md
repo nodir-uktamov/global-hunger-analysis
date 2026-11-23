@@ -386,7 +386,7 @@ ggplot(hunger_data, aes(x = GINI, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-gini-1.png)<!-- -->
+![](global_hunger_analysis_v2_files/figure-gfm/plot-gini-1.png)<!-- -->
 
 ### Hunger vs primary school enrolment
 
@@ -402,7 +402,7 @@ ggplot(hunger_data, aes(x = SchoolEnroll, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-school-1.png)<!-- -->
+![](global_hunger_analysis_v2_files/figure-gfm/plot-school-1.png)<!-- -->
 
 ### Hunger vs GDP per capita (log scale)
 
@@ -423,7 +423,7 @@ ggplot(hunger_data, aes(x = GDP, y = Hunger)) +
   theme_minimal()
 ```
 
-![](/Users/nodir/Documents/portfolio/global-hunger-analysis/report/global_hunger_analysis_v2_files/figure-gfm/plot-gdp-1.png)<!-- -->
+![](global_hunger_analysis_v2_files/figure-gfm/plot-gdp-1.png)<!-- -->
 
 ## Step 5 – Correlations: Pearson and Spearman
 
